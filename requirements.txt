@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DCC Dungeon Control Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="header">
+    <h1>⚠ DUNGEON CONTROL PANEL ⚠</h1>
+    <div class="sub">Borant-grade crawler monitoring interface</div>
+
+    {% if storage.mode == "PERSISTENT" %}
+        <div class="storage-good">✅ Persistent storage active</div>
+    {% else %}
+        <div class="storage-bad">⚠ Ephemeral storage active — add a Render disk at /var/data</div>
+    {% endif %}
+</div>
+
+<div class="layout">
+    <div class="card">
+        <h2>Create Crawler</h2>
+        <form action="/create" method="post">
+            <input name="name" placeholder="Crawler name">
+            <button>Create Character</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Active Crawlers</h2>
+        {% for c in chars %}
+            <div class="skill-line">
+                <span><a href="/c/{{c[0]}}">{{c[1]}}</a></span>
+                <span>OPEN</span>
+            </div>
+        {% else %}
+            <p class="small-note">No crawlers created yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>

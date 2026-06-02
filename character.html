@@ -1,0 +1,74 @@
+const cid = window.location.pathname.split("/").pop();
+
+function collectData() {
+    const data = { effects: [] };
+
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+        if (el.name) {
+            if (el.type === "checkbox") data[el.name] = el.checked;
+            else data[el.name] = el.value;
+        }
+    });
+
+    document.querySelectorAll(".effect").forEach(effect => {
+        const name = effect.querySelector(".effect-name")?.value || "";
+        const value = parseInt(effect.querySelector(".effect-value")?.value || "0");
+        const duration = parseInt(effect.querySelector(".effect-duration")?.value || "0");
+        const durationType = effect.querySelector(".effect-duration-type")?.value || "rounds";
+        const isBuff = effect.querySelector(".effect-is-buff")?.checked || false;
+
+        if (name.trim()) {
+            data.effects.push({ name, value, duration, duration_type: durationType, is_buff: isBuff });
+        }
+    });
+
+    return data;
+}
+
+async function saveData(reloadAfter = false) {
+    const indicator = document.getElementById("save-indicator");
+    if (indicator) indicator.textContent = "Saving...";
+
+    await fetch(`/autosave/${cid}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(collectData())
+    });
+
+    if (indicator) indicator.textContent = "Saved";
+    if (reloadAfter) window.location.reload();
+}
+
+document.addEventListener("input", () => {
+    clearTimeout(window.autoSaveTimer);
+    window.autoSaveTimer = setTimeout(() => saveData(false), 450);
+});
+
+document.addEventListener("change", () => {
+    clearTimeout(window.autoSaveTimer);
+    window.autoSaveTimer = setTimeout(() => saveData(false), 450);
+});
+
+function updateParsedBonuses() { saveData(true); }
+
+function addEffect() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "effect";
+    wrapper.innerHTML = `
+        <div class="effect-grid">
+            <input class="effect-name" placeholder="Effect name">
+            <input class="effect-value" type="number" placeholder="Value">
+            <input class="effect-duration" type="number" placeholder="Duration">
+            <select class="effect-duration-type">
+                <option value="rounds">rounds</option>
+                <option value="hours">hours</option>
+            </select>
+        </div>
+        <label class="checkbox-row">
+            <input type="checkbox" class="effect-is-buff">
+            Buff? unchecked = debuff
+        </label>
+    `;
+    document.getElementById("effects").appendChild(wrapper);
+    saveData(false);
+}

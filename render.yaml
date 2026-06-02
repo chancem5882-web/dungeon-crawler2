@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ character[1] }} - DCC Control Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="header">
+    <h1>⚠ DUNGEON CONTROL PANEL ⚠</h1>
+    <div class="sub">
+        {{ character[1] }} |
+        <span id="save-indicator">Saved</span> |
+        <a href="/">All Crawlers</a>
+    </div>
+
+    {% if storage.mode == "PERSISTENT" %}
+        <div class="storage-good">✅ Persistent storage active</div>
+    {% else %}
+        <div class="storage-bad">⚠ Data may reset on server restart — add Render disk at /var/data</div>
+    {% endif %}
+</div>
+
+<div class="layout">
+    <div class="card">
+        {% if character[2] %}
+            <img src="{{ character[2] }}" class="portrait">
+        {% else %}
+            <div class="no-portrait">No Portrait Uploaded</div>
+        {% endif %}
+
+        <form action="/upload/{{ character[0] }}" method="post" enctype="multipart/form-data">
+            <input type="file" name="image">
+            <button>Upload Portrait</button>
+        </form>
+
+        <h2>{{ character[1] }}</h2>
+
+        <label>Level</label>
+        <input name="level" type="number" value="{{ meta[1] }}">
+
+        <label>HP</label>
+        <input name="hp" type="number" value="{{ meta[2] }}">
+
+        <label>Max HP</label>
+        <input name="max_hp" type="number" value="{{ meta[3] }}">
+
+        <div class="hpbar">
+            <div class="hpfill" style="width: {{ (meta[2] / meta[3]) * 100 }}%;"></div>
+        </div>
+
+        <label>Gold</label>
+        <input name="gold" type="number" value="{{ meta[4] }}">
+
+        <h2>Fans</h2>
+        <label>Views</label>
+        <input name="views" type="number" value="{{ meta[5] }}">
+
+        <label>Followers</label>
+        <input name="followers" type="number" value="{{ meta[6] }}">
+
+        <label>Favorites</label>
+        <input name="favorites" type="number" value="{{ meta[7] }}">
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Stats</h2>
+            <div class="stat-row">
+                <strong>Stat</strong><strong>Base</strong><strong>Buff</strong><strong>Equip</strong><strong>Total</strong>
+            </div>
+
+            {% for s, d in stats.items() %}
+            <div class="stat-row">
+                <div class="stat-name">{{ s }}</div>
+                <input name="base_{{ s }}" type="number" value="{{ d.base }}">
+                <input name="buff_{{ s }}" type="number" value="{{ d.buff }}">
+                <div>{{ d.equip }}</div>
+                <div class="stat-total">{{ d.total }} (+{{ d.mod }})</div>
+            </div>
+            {% endfor %}
+            <p class="small-note">Modifier rule: every 5 total points = +1 modifier.</p>
+        </div>
+
+        <div class="card">
+            <h2>Equipment Parser</h2>
+            <p class="small-note">Parsed from equipment only. Examples:<br>+3 STR sword<br>bomb handling +2<br>+10% attack speed<br>(Invisible) (Burning)</p>
+            <textarea name="equipment" rows="10">{{ meta[8] }}</textarea>
+            <button type="button" class="update-btn" onclick="updateParsedBonuses()">UPDATE PARSED BONUSES</button>
+        </div>
+
+        <div class="card">
+            <h2>Parsed Skills</h2>
+            {% for s in skills %}
+                <div class="skill-line"><span>{{ s[0] }}</span><span>+{{ s[1] }}</span></div>
+            {% else %}
+                <p class="small-note">No skill bonuses detected.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Parsed Percentages</h2>
+            {% for p in percentages %}
+                <div class="skill-line percent-line"><span>{{ p[0] }}</span><span>{{ p[1] }}%</span></div>
+            {% else %}
+                <p class="small-note">No percentage bonuses detected.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Special Conditions</h2>
+            {% for c in conditions %}
+                <span class="tag">{{ c[0] }}</span>
+            {% else %}
+                <p class="small-note">No parenthesized conditions detected.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Inventory</h2>
+            <textarea name="inventory" rows="10">{{ meta[10] }}</textarea>
+            <p class="small-note">Inventory is storage only now. Parsing happens from Equipment.</p>
+        </div>
+
+        <div class="card">
+            <h2>Spells</h2>
+            <textarea name="spells" rows="10">{{ meta[9] }}</textarea>
+        </div>
+
+        <div class="card">
+            <h2>Class Features</h2>
+            <textarea name="class_features" rows="10">{{ meta[11] }}</textarea>
+        </div>
+
+        <div class="card">
+            <h2>Race Features</h2>
+            <textarea name="race_features" rows="10">{{ meta[12] }}</textarea>
+        </div>
+
+        <div class="card">
+            <h2>Buffs & Debuffs</h2>
+            <div id="effects">
+                {% for e in effects %}
+                <div class="effect">
+                    <div class="effect-grid">
+                        <input class="effect-name" value="{{ e[0] }}">
+                        <input class="effect-value" type="number" value="{{ e[1] }}">
+                        <input class="effect-duration" type="number" value="{{ e[2] }}">
+                        <select class="effect-duration-type">
+                            <option value="rounds" {% if e[3] == "rounds" %}selected{% endif %}>rounds</option>
+                            <option value="hours" {% if e[3] == "hours" %}selected{% endif %}>hours</option>
+                        </select>
+                    </div>
+                    <label class="checkbox-row">
+                        <input type="checkbox" class="effect-is-buff" {% if e[4] == 1 %}checked{% endif %}>
+                        Buff? unchecked = debuff
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" onclick="addEffect()">+ Add Buff / Debuff</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/autosave.js"></script>
+</body>
+</html>
